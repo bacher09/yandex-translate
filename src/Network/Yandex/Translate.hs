@@ -8,7 +8,7 @@ module Network.Yandex.Translate (
 import Prelude hiding (drop)
 import Control.Lens
 import Data.Aeson
-import Data.Aeson.Lens (key, _JSON)
+import Data.Aeson.Lens
 import Data.Text
 import Data.Monoid
 import Network.Wreq
@@ -62,3 +62,11 @@ directions ykey lang = do
   where
     sopts = optsWithKey ykey
     opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
+
+
+detect :: APIKey -> Text -> IO (Maybe Language)
+detect ykey text = do
+    r <- asValue =<< postWith opts detectUrl ["text" := text]
+    return $ r ^? responseBody .key "lang" ._String
+  where
+    opts = optsWithKey ykey
