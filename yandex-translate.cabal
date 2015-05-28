@@ -13,9 +13,17 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 library
-  -- exposed-modules:     
+  exposed-modules:     Network.Yandex.Translate
+
+  build-depends:       base >=4.5 && <5,
+                       bytestring >=0.10 && <0.11,
+                       text >=1.0,
+                       aeson >= 0.7.0.3,
+                       lens >= 4.5,
+                       lens-aeson,
+                       wreq
   -- other-modules:       
   -- other-extensions:    
-  build-depends:       base >=4.7 && <4.8
+  ghc-options:         -funbox-strict-fields -Wall -fno-warn-name-shadowing
   hs-source-dirs:      src
   default-language:    Haskell2010
