@@ -3,26 +3,30 @@ module Network.Yandex.Translate (
     APIKey,
     Language,
     Direction,
-    directions,
-    fromJSONMaybe
+    directions
 ) where
 import Prelude hiding (drop)
 import Control.Lens
 import Data.Aeson
-import Data.Aeson.Lens (key)
+import Data.Aeson.Lens (key, _JSON)
 import Data.Text
 import Data.Monoid
 import Network.Wreq
+import Data.Maybe (fromMaybe)
+import Control.Arrow ((&&&))
+import Data.HashMap.Strict
+import Control.Applicative
 
 
 type APIKey = Text
 type Language = Text
+type LanguagesDescr = HashMap Text Text
 newtype Direction = Direction (Language, Language)
     deriving(Eq)
 
 
 instance Show Direction where
-    show (Direction (f, t)) = show $ f <> "-" <> t
+    show (Direction (f, t)) = unpack f ++ "-" ++ unpack t
 
 
 instance ToJSON Direction where
@@ -51,15 +55,10 @@ optsWithKey :: APIKey -> Options
 optsWithKey key = defaults & param "key" .~ [key]
 
 
-fromJSONMaybe :: FromJSON a => Value -> Maybe a
-fromJSONMaybe v = case fromJSON v of
-    Error   _ -> Nothing
-    Success a -> Just a
-
-
-directions :: APIKey -> IO (Maybe [Direction])
-directions ykey = do
-    r <- getWith opts getLangsUrl
-    return $ r ^? responseBody .key "dirs" .to fromJSONMaybe ._Just
+directions :: APIKey -> Maybe Language -> IO (Maybe [Direction], Maybe LanguagesDescr)
+directions ykey lang = do
+    r <- asValue =<< getWith opts getLangsUrl
+    return $ (^? key "dirs" ._JSON) &&& (^? key "langs" ._JSON) $ r ^. responseBody
   where
-    opts = optsWithKey ykey
+    sopts = optsWithKey ykey
+    opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
