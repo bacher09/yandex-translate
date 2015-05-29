@@ -21,6 +21,7 @@ library
                        aeson >= 0.7.0.3,
                        lens >= 4.5,
                        lens-aeson,
+                       exceptions,
                        unordered-containers,
                        wreq
   -- other-modules:       
