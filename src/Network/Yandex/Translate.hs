@@ -24,6 +24,7 @@ import Control.Arrow ((&&&))
 import Data.HashMap.Strict
 import Control.Applicative
 import Control.Monad.Catch (MonadThrow(throwM))
+import Data.Default.Class
 
 
 type APIKey = Text
@@ -77,6 +78,10 @@ makeLenses ''TranslateParams
 
 defaultParams :: TranslateParams
 defaultParams = TranslateParams Plain []
+
+
+instance Default TranslateParams where
+    def = defaultParams
 
 
 baseUrl :: String
