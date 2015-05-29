@@ -3,6 +3,7 @@ module Network.Yandex.Translate (
     APIKey,
     Language,
     Direction,
+    LanguagesDescr,
     TranslateOptions(..),
     Format(..),
     TranslateParams(..),
@@ -97,10 +98,12 @@ formatDirection (Just f) l =  f <> "-" <> l
 formatDirection Nothing t = t
 
 
-directions :: APIKey -> Maybe Language -> IO (Maybe [Direction], Maybe LanguagesDescr)
+directions :: APIKey -> Maybe Language -> IO ([Direction], Maybe LanguagesDescr)
 directions ykey lang = do
     r <- asValue =<< getWith opts getLangsUrl
-    return $ (^? key "dirs" ._JSON) &&& (^? key "langs" ._JSON) $ r ^. responseBody
+    let (dm, l) = (^? key "dirs" ._JSON) &&& (^? key "langs" ._JSON) $ r ^. responseBody
+    d <- maybe (throwM $ JSONError "no dirs key in json") return dm
+    return (d, l)
   where
     sopts = optsWithKey ykey
     opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
