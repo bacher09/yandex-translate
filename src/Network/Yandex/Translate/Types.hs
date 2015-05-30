@@ -6,6 +6,7 @@ module Network.Yandex.Translate.Types (
     LanguagesDescr,
     Direction(..),
     YandexApiT,
+    ApiInfo,
     YandexApiConfig(..),
     TranslateParams(..),
     -- lens
@@ -13,11 +14,14 @@ module Network.Yandex.Translate.Types (
     httpOptions,
     format,
     options,
+    _config,
+    _session,
     -- funcs
     formatDirection,
     configureApi,
     runYandexApiT,
-    runYandexApi
+    runYandexApi,
+    runYandexApiSession
 ) where
 import Prelude hiding (drop)
 import Data.Default.Class
@@ -29,6 +33,7 @@ import Data.HashMap.Strict
 import Data.Text
 import Control.Monad.IO.Class
 import Network.Wreq hiding (options)
+import Network.Wreq.Session (Session, withAPISession)
 
 
 type APIKey = Text
@@ -37,13 +42,15 @@ type LanguagesDescr = HashMap Text Text
 newtype Direction = Direction (Language, Language)
     deriving(Eq)
 
-type YandexApiT m a = ReaderT YandexApiConfig m a
+type ApiInfo = (YandexApiConfig, Session)
+type YandexApiT m a = ReaderT ApiInfo m a
 
 
 data YandexApiConfig = YandexApiConfig {
     _apikey      :: APIKey,
     _httpOptions :: Options
 } deriving(Show)
+
 
 data TranslateOptions = DetectLanguage
     deriving(Eq, Ord, Bounded, Enum)
@@ -87,6 +94,12 @@ instance Show TranslateOptions where
 makeLenses ''TranslateParams
 makeLenses ''YandexApiConfig
 
+_config :: Lens' ApiInfo YandexApiConfig
+_config  = _1
+
+_session :: Lens' ApiInfo Session
+_session = _2
+
 
 defaultParams :: TranslateParams
 defaultParams = TranslateParams Plain []
@@ -107,8 +120,13 @@ configureApi key = YandexApiConfig {_apikey=key, _httpOptions=opts}
     opts = defaults & redirects .~ 0
 
 
-runYandexApiT :: (MonadIO m) => YandexApiConfig -> YandexApiT m a -> m a
-runYandexApiT conf act = runReaderT act conf
+runYandexApiT :: (MonadIO m) => Session -> YandexApiConfig -> YandexApiT m a -> m a
+runYandexApiT sess conf act = runReaderT act (conf, sess)
 
-runYandexApi :: (MonadIO m) => YandexApiConfig -> YandexApiT IO a -> m a
-runYandexApi conf act = liftIO $ runYandexApiT conf act
+
+runYandexApi :: (MonadIO m) => Session -> YandexApiConfig -> YandexApiT IO a -> m a
+runYandexApi sess conf act = liftIO $ runYandexApiT sess conf act
+
+
+runYandexApiSession :: YandexApiConfig -> YandexApiT IO a -> IO a
+runYandexApiSession conf act = withAPISession (\sess -> runYandexApi sess conf act)

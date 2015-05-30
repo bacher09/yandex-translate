@@ -12,10 +12,6 @@ import Data.Maybe
 import Control.Monad.IO.Class
 
 
-runApi :: YandexApiConfig -> YandexApiT IO a -> IO a
-runApi = runYandexApi
-
-
 spec :: Spec
 spec = do
     -- raise exception if var not set
@@ -45,3 +41,5 @@ spec = do
             liftIO $ msgs `shouldBe` ["привет"]
             liftIO $ detect `shouldBe` Nothing
             liftIO $ dir `shouldBe` Direction ("en", "ru")
+  where
+    runApi = runYandexApiSession

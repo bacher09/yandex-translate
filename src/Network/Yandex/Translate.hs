@@ -17,15 +17,19 @@ module Network.Yandex.Translate (
     httpOptions,
     format,
     options,
+    _config,
+    _session,
     -- other functions
     configureApi,
     runYandexApiT,
-    runYandexApi
+    runYandexApi,
+    runYandexApiSession
 ) where
 import Control.Lens
 import Data.Aeson.Lens
 import Data.Text
 import Network.Wreq hiding (options)
+import qualified Network.Wreq.Session as S
 import Data.Maybe (fromMaybe)
 import Control.Arrow ((&&&))
 import Control.Applicative
@@ -46,15 +50,16 @@ translateUrl = baseUrl ++ "translate"
 
 baseOptions :: (MonadIO m, MonadThrow m) => YandexApiT m Options
 baseOptions = do
-    ykey <- view apikey
-    opt <- view httpOptions
+    ykey <- view $ _config.apikey
+    opt <- view $ _config.httpOptions
     return $ opt & param "key" .~ [ykey]
 
 
 directions :: (MonadIO m, MonadThrow m) => Maybe Language -> YandexApiT m ([Direction], Maybe LanguagesDescr)
 directions lang = do
     opts <- getOpts
-    r <- liftIO $ asValue =<< getWith opts getLangsUrl
+    sess <- view _session
+    r <- liftIO $ asValue =<< S.getWith opts sess getLangsUrl
     let (dm, l) = (^? key "dirs" ._JSON) &&& (^? key "langs" ._JSON) $ r ^. responseBody
     d <- maybe (throwM $ JSONError "no dirs key in json") return dm
     return (d, l)
@@ -67,7 +72,8 @@ directions lang = do
 detect :: (MonadIO m, MonadThrow m) => Text -> YandexApiT m Language
 detect text = do
     opts <- getOpts
-    r <- liftIO $ asValue =<< postWith opts detectUrl ["text" := text]
+    sess <- view _session
+    r <- liftIO $ asValue =<< S.postWith opts sess detectUrl ["text" := text]
     let mlang = r ^? responseBody .key "lang" ._String
     maybe (throwM $ JSONError "Error no lang key in json") return mlang
   where
@@ -77,7 +83,8 @@ detect text = do
 translate :: (MonadIO m, MonadThrow m) => Maybe Language -> Language -> TranslateParams -> [Text] -> YandexApiT m ([Text], Direction, Maybe Text)
 translate f t params texts = do
     opts <- getOpts
-    r <- liftIO $ asValue =<< postWith opts translateUrl postParams
+    sess <- view _session
+    r <- liftIO $ asValue =<< S.postWith opts sess translateUrl postParams
     let mres_text = r ^? responseBody .key "text" ._JSON
         mres_lang = r ^? responseBody .key "lang" ._JSON
         mdetected = r ^? responseBody .key "detected" .key "lang" ._String
