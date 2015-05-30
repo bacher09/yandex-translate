@@ -1,102 +1,31 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
 module Network.Yandex.Translate (
+    -- types
     APIKey,
     Language,
-    Direction(..),
     LanguagesDescr,
-    TranslateOptions(..),
-    Format(..),
+    Direction(..),
+    YandexApiT,
+    YandexApiConfig(..),
     TranslateParams(..),
-    defaultParams,
+    -- api funcs
     directions,
     detect,
     translate,
+    -- other functions
     runYandexApiT,
-    runYandexApi,
-    YandexApiConfig(..),
-    YandexApiT,
-    apikey
+    runYandexApi
 ) where
-import Prelude hiding (drop)
 import Control.Lens
-import Data.Aeson
 import Data.Aeson.Lens
 import Data.Text
-import Data.Monoid
 import Network.Wreq hiding (options)
 import Data.Maybe (fromMaybe)
 import Control.Arrow ((&&&))
-import Data.HashMap.Strict
 import Control.Applicative
 import Control.Monad.Catch (MonadThrow(throwM))
-import Data.Default.Class
-import Control.Monad.Trans.Reader
 import Control.Monad.IO.Class
-
-
-type APIKey = Text
-type Language = Text
-type LanguagesDescr = HashMap Text Text
-newtype Direction = Direction (Language, Language)
-    deriving(Eq)
-
-
-type YandexApiT m a = ReaderT YandexApiConfig m a
-
-
-data YandexApiConfig = YandexApiConfig {
-    _apikey :: APIKey
-} deriving(Show, Eq)
-
-data TranslateOptions = DetectLanguage
-    deriving(Eq, Ord, Bounded, Enum)
-
-data Format = Plain
-            | HTML
-    deriving(Eq, Ord, Bounded, Enum)
-
-
-data TranslateParams = TranslateParams {
-    _format  :: Format,
-    _options :: [TranslateOptions]
-} deriving(Show)
-
-
-instance Show Direction where
-    show (Direction (f, t)) = unpack f ++ "-" ++ unpack t
-
-
-instance ToJSON Direction where
-    toJSON = toJSON . show
-
-
-instance FromJSON Direction where
-    parseJSON = withText "Direction" $ \s ->
-        case breakOn "-" s of
-            (f, t)
-                | "-" `isPrefixOf` t -> return $ Direction (f, drop 1 t)
-                | otherwise -> fail "Can't parse language direction"
-
-
-instance Show Format where
-    show Plain = "plain"
-    show HTML =  "html"
-
-
-instance Show TranslateOptions where
-    show DetectLanguage = "1"
-
-
-makeLenses ''TranslateParams
-makeLenses ''YandexApiConfig
-
-
-defaultParams :: TranslateParams
-defaultParams = TranslateParams Plain []
-
-
-instance Default TranslateParams where
-    def = defaultParams
+import Network.Yandex.Translate.Types
 
 
 baseUrl :: String
@@ -111,11 +40,6 @@ translateUrl = baseUrl ++ "translate"
 
 optsWithKey :: APIKey -> Options
 optsWithKey key = defaults & param "key" .~ [key]
-
-
-formatDirection :: Maybe Language -> Language -> Text
-formatDirection (Just f) l =  f <> "-" <> l
-formatDirection Nothing t = t
 
 
 directions :: (MonadIO m, MonadThrow m) => Maybe Language -> YandexApiT m ([Direction], Maybe LanguagesDescr)
@@ -167,10 +91,3 @@ translate f t params texts = do
         return $ if topts & isn't _Empty
             then bopts & param "options" .~ (topts <&> pack . show)
             else bopts
-
-
-runYandexApiT :: (MonadIO m) => YandexApiConfig -> YandexApiT m a -> m a
-runYandexApiT conf act = runReaderT act conf
-
-runYandexApi :: (MonadIO m) => YandexApiConfig -> YandexApiT IO a -> m a
-runYandexApi conf act = liftIO $ runYandexApiT conf act

@@ -19,7 +19,8 @@ flag integration-tests
                       Note, that you should set YANDEX_APIKEY env variable for this.
 
 library
-  exposed-modules:     Network.Yandex.Translate
+  exposed-modules:     Network.Yandex.Translate,
+                       Network.Yandex.Translate.Types
 
   build-depends:       base >=4.5 && <5,
                        bytestring >=0.10 && <0.11,
