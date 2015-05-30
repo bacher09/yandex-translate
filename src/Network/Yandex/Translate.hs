@@ -2,7 +2,7 @@
 module Network.Yandex.Translate (
     APIKey,
     Language,
-    Direction,
+    Direction(..),
     LanguagesDescr,
     TranslateOptions(..),
     Format(..),
