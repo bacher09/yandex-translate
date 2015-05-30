@@ -12,7 +12,13 @@ module Network.Yandex.Translate (
     directions,
     detect,
     translate,
+    -- lens
+    apikey,
+    httpOptions,
+    format,
+    options,
     -- other functions
+    configureApi,
     runYandexApiT,
     runYandexApi
 ) where
@@ -38,8 +44,11 @@ detectUrl = baseUrl ++ "detect"
 translateUrl = baseUrl ++ "translate"
 
 
-optsWithKey :: APIKey -> Options
-optsWithKey key = defaults & param "key" .~ [key]
+baseOptions :: (MonadIO m, MonadThrow m) => YandexApiT m Options
+baseOptions = do
+    ykey <- view apikey
+    opt <- view httpOptions
+    return $ opt & param "key" .~ [ykey]
 
 
 directions :: (MonadIO m, MonadThrow m) => Maybe Language -> YandexApiT m ([Direction], Maybe LanguagesDescr)
@@ -51,10 +60,8 @@ directions lang = do
     return (d, l)
   where
     getOpts = do
-        ykey <- view apikey
-        let sopts = optsWithKey ykey
-            opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
-        return opts
+        opts <- baseOptions
+        return $ fromMaybe opts $ (\l -> opts & param "ui" .~ [l]) <$> lang
 
 
 detect :: (MonadIO m, MonadThrow m) => Text -> YandexApiT m Language
@@ -64,9 +71,7 @@ detect text = do
     let mlang = r ^? responseBody .key "lang" ._String
     maybe (throwM $ JSONError "Error no lang key in json") return mlang
   where
-    getOpts = do
-        ykey <- view apikey
-        return $ optsWithKey ykey
+    getOpts = baseOptions
 
 
 translate :: (MonadIO m, MonadThrow m) => Maybe Language -> Language -> TranslateParams -> [Text] -> YandexApiT m ([Text], Direction, Maybe Text)
@@ -85,8 +90,8 @@ translate f t params texts = do
     postParams = ("text" :=) <$> texts
     topts = params ^. options
     getOpts = do
-        ykey <- view apikey
-        let bopts = optsWithKey ykey & param "lang" .~ [tdir] &
+        dopts <- baseOptions
+        let bopts = dopts & param "lang" .~ [tdir] &
                     param "format" .~ [params ^.format .to (pack . show)]
         return $ if topts & isn't _Empty
             then bopts & param "options" .~ (topts <&> pack . show)

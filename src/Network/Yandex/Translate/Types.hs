@@ -10,22 +10,25 @@ module Network.Yandex.Translate.Types (
     TranslateParams(..),
     -- lens
     apikey,
+    httpOptions,
     format,
     options,
     -- funcs
     formatDirection,
+    configureApi,
     runYandexApiT,
     runYandexApi
 ) where
 import Prelude hiding (drop)
 import Data.Default.Class
 import Control.Monad.Trans.Reader
-import Control.Lens.TH
+import Control.Lens
 import Data.Aeson
 import Data.Monoid
 import Data.HashMap.Strict
 import Data.Text
 import Control.Monad.IO.Class
+import Network.Wreq hiding (options)
 
 
 type APIKey = Text
@@ -38,8 +41,9 @@ type YandexApiT m a = ReaderT YandexApiConfig m a
 
 
 data YandexApiConfig = YandexApiConfig {
-    _apikey :: APIKey
-} deriving(Show, Eq)
+    _apikey      :: APIKey,
+    _httpOptions :: Options
+} deriving(Show)
 
 data TranslateOptions = DetectLanguage
     deriving(Eq, Ord, Bounded, Enum)
@@ -95,6 +99,12 @@ instance Default TranslateParams where
 formatDirection :: Maybe Language -> Language -> Text
 formatDirection (Just f) l =  f <> "-" <> l
 formatDirection Nothing t = t
+
+
+configureApi :: APIKey -> YandexApiConfig
+configureApi key = YandexApiConfig {_apikey=key, _httpOptions=opts}
+  where
+    opts = defaults & redirects .~ 0
 
 
 runYandexApiT :: (MonadIO m) => YandexApiConfig -> YandexApiT m a -> m a

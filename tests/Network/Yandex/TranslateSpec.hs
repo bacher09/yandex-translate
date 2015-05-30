@@ -20,7 +20,7 @@ spec :: Spec
 spec = do
     -- raise exception if var not set
     key <- runIO $ pack <$> getEnv "YANDEX_APIKEY"
-    let conf = YandexApiConfig key
+    let conf = configureApi key
 
     describe "directions" $ do
         it "should contains en-ru, ru-en directions" $ do
