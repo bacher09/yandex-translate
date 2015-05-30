@@ -9,32 +9,39 @@ import Control.Applicative
 import Network.Yandex.Translate
 import Data.Default.Class
 import Data.Maybe
+import Control.Monad.IO.Class
+
+
+runApi :: YandexApiConfig -> YandexApiT IO a -> IO a
+runApi = runYandexApi
 
 
 spec :: Spec
 spec = do
     -- raise exception if var not set
     key <- runIO $ pack <$> getEnv "YANDEX_APIKEY"
+    let conf = YandexApiConfig key
 
     describe "directions" $ do
         it "should contains en-ru, ru-en directions" $ do
-            (dirs, ui) <- directions key Nothing
+            (dirs, ui ) <- runApi conf $ directions Nothing
             ui `shouldBe` Nothing
             dirs `shouldContain` [Direction ("en", "ru")]
             dirs `shouldContain` [Direction ("ru", "en")]
 
+
         it "check directions for english ui" $ do
-            (_, ui) <- directions key $ Just "en"
+            (_, ui) <- runApi conf $ directions (Just "en")
             isJust ui `shouldBe` True
 
     describe "detect" $ do
         it "should detect english for word Hello" $ do
-            lang <- detect key "Hello"
+            lang <- runApi conf $ detect "Hello"
             lang `shouldBe` "en"
 
     describe "translate" $ do
-        it "Hello should translate to russian" $ do
-            (msgs, dir, detect)  <- translate key (Just "en") "ru" def ["hello"]
-            msgs `shouldBe` ["привет"]
-            detect `shouldBe` Nothing
-            dir `shouldBe` Direction ("en", "ru")
+        it "Hello should translate to russian" $ runApi conf $ do
+            (msgs, dir, detect)  <- translate (Just "en") "ru" def ["hello"]
+            liftIO $ msgs `shouldBe` ["привет"]
+            liftIO $ detect `shouldBe` Nothing
+            liftIO $ dir `shouldBe` Direction ("en", "ru")

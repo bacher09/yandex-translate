@@ -10,7 +10,12 @@ module Network.Yandex.Translate (
     defaultParams,
     directions,
     detect,
-    translate
+    translate,
+    runYandexApiT,
+    runYandexApi,
+    YandexApiConfig(..),
+    YandexApiT,
+    apikey
 ) where
 import Prelude hiding (drop)
 import Control.Lens
@@ -25,6 +30,8 @@ import Data.HashMap.Strict
 import Control.Applicative
 import Control.Monad.Catch (MonadThrow(throwM))
 import Data.Default.Class
+import Control.Monad.Trans.Reader
+import Control.Monad.IO.Class
 
 
 type APIKey = Text
@@ -33,6 +40,13 @@ type LanguagesDescr = HashMap Text Text
 newtype Direction = Direction (Language, Language)
     deriving(Eq)
 
+
+type YandexApiT m a = ReaderT YandexApiConfig m a
+
+
+data YandexApiConfig = YandexApiConfig {
+    _apikey :: APIKey
+} deriving(Show, Eq)
 
 data TranslateOptions = DetectLanguage
     deriving(Eq, Ord, Bounded, Enum)
@@ -74,6 +88,7 @@ instance Show TranslateOptions where
 
 
 makeLenses ''TranslateParams
+makeLenses ''YandexApiConfig
 
 
 defaultParams :: TranslateParams
@@ -103,29 +118,37 @@ formatDirection (Just f) l =  f <> "-" <> l
 formatDirection Nothing t = t
 
 
-directions :: APIKey -> Maybe Language -> IO ([Direction], Maybe LanguagesDescr)
-directions ykey lang = do
-    r <- asValue =<< getWith opts getLangsUrl
+directions :: (MonadIO m, MonadThrow m) => Maybe Language -> YandexApiT m ([Direction], Maybe LanguagesDescr)
+directions lang = do
+    opts <- getOpts
+    r <- liftIO $ asValue =<< getWith opts getLangsUrl
     let (dm, l) = (^? key "dirs" ._JSON) &&& (^? key "langs" ._JSON) $ r ^. responseBody
     d <- maybe (throwM $ JSONError "no dirs key in json") return dm
     return (d, l)
   where
-    sopts = optsWithKey ykey
-    opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
+    getOpts = do
+        ykey <- view apikey
+        let sopts = optsWithKey ykey
+            opts = fromMaybe sopts $ (\l -> sopts & param "ui" .~ [l]) <$> lang
+        return opts
 
 
-detect :: APIKey -> Text -> IO Language
-detect ykey text = do
-    r <- asValue =<< postWith opts detectUrl ["text" := text]
+detect :: (MonadIO m, MonadThrow m) => Text -> YandexApiT m Language
+detect text = do
+    opts <- getOpts
+    r <- liftIO $ asValue =<< postWith opts detectUrl ["text" := text]
     let mlang = r ^? responseBody .key "lang" ._String
     maybe (throwM $ JSONError "Error no lang key in json") return mlang
   where
-    opts = optsWithKey ykey
+    getOpts = do
+        ykey <- view apikey
+        return $ optsWithKey ykey
 
 
-translate :: APIKey -> Maybe Language -> Language -> TranslateParams -> [Text] -> IO ([Text], Direction, Maybe Text)
-translate ykey f t params texts = do
-    r <- asValue =<< postWith opts translateUrl postParams
+translate :: (MonadIO m, MonadThrow m) => Maybe Language -> Language -> TranslateParams -> [Text] -> YandexApiT m ([Text], Direction, Maybe Text)
+translate f t params texts = do
+    opts <- getOpts
+    r <- liftIO $ asValue =<< postWith opts translateUrl postParams
     let mres_text = r ^? responseBody .key "text" ._JSON
         mres_lang = r ^? responseBody .key "lang" ._JSON
         mdetected = r ^? responseBody .key "detected" .key "lang" ._String
@@ -137,8 +160,17 @@ translate ykey f t params texts = do
     tdir = formatDirection f t
     postParams = ("text" :=) <$> texts
     topts = params ^. options
-    bopts = optsWithKey ykey & param "lang" .~ [tdir] &
-            param "format" .~ [params ^.format .to (pack . show)]
-    opts = if topts & isn't _Empty
-        then bopts & param "options" .~ (topts <&> pack . show)
-        else bopts
+    getOpts = do
+        ykey <- view apikey
+        let bopts = optsWithKey ykey & param "lang" .~ [tdir] &
+                    param "format" .~ [params ^.format .to (pack . show)]
+        return $ if topts & isn't _Empty
+            then bopts & param "options" .~ (topts <&> pack . show)
+            else bopts
+
+
+runYandexApiT :: (MonadIO m) => YandexApiConfig -> YandexApiT m a -> m a
+runYandexApiT conf act = runReaderT act conf
+
+runYandexApi :: (MonadIO m) => YandexApiConfig -> YandexApiT IO a -> m a
+runYandexApi conf act = liftIO $ runYandexApiT conf act

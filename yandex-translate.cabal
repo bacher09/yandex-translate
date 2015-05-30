@@ -30,6 +30,7 @@ library
                        exceptions,
                        data-default-class,
                        unordered-containers,
+                       transformers,
                        wreq
   -- other-modules:       
   -- other-extensions:    
@@ -55,6 +56,7 @@ test-suite yandex-tests
                        hspec-core,
                        hspec,
                        data-default-class,
+                       transformers,
                        yandex-translate
 
   ghc-options:         -funbox-strict-fields -Wall -fno-warn-name-shadowing
