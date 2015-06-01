@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Network.Yandex.Translate (
     -- types
     APIKey,

@@ -1,4 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
 module Network.Yandex.DictionarySpec (
     spec
 ) where

@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TemplateHaskell #-}
+{-# LANGUAGE TemplateHaskell #-}
 module Network.Yandex.Translate.Types (
     -- types
     APIKey,
