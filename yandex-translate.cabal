@@ -16,7 +16,7 @@ flag integration-tests
     default:          False
     description:      Run integration tests with real API.
                       .
-                      Note, that you should set YANDEX_APIKEY env variable for this.
+                      Note, that you should set YANDEX_APIKEY_TRANSLATE env variable for this.
 
 library
   exposed-modules:     Network.Yandex.Translate,

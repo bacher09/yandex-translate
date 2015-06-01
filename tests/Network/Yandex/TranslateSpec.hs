@@ -15,7 +15,7 @@ import Control.Monad.IO.Class
 spec :: Spec
 spec = do
     -- raise exception if var not set
-    key <- runIO $ pack <$> getEnv "YANDEX_APIKEY"
+    key <- runIO $ pack <$> getEnv "YANDEX_APIKEY_TRANSLATE"
     let conf = configureApi key
 
     describe "directions" $ do
