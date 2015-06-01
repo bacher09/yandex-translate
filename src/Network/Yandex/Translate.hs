@@ -35,6 +35,7 @@ import Control.Applicative
 import Control.Monad.Catch (MonadThrow(throwM))
 import Control.Monad.IO.Class
 import Network.Yandex.Translate.Types
+import Network.Yandex.Translate.Internal
 
 
 baseUrl :: String
@@ -45,13 +46,6 @@ getLangsUrl, detectUrl, translateUrl :: String
 getLangsUrl = baseUrl ++ "getLangs"
 detectUrl = baseUrl ++ "detect"
 translateUrl = baseUrl ++ "translate"
-
-
-baseOptions :: (MonadIO m, MonadThrow m) => YandexApiT m Options
-baseOptions = do
-    ykey <- view $ _config.apikey
-    opt <- view $ _config.httpOptions
-    return $ opt & param "key" .~ [ykey]
 
 
 directions :: (MonadIO m, MonadThrow m) => Maybe Language -> YandexApiT m ([Direction], Maybe LanguagesDescr)

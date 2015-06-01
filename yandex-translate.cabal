@@ -24,6 +24,8 @@ library
                        Network.Yandex.Translate.Types,
                        Network.Yandex.Dictionary
 
+  other-modules:       Network.Yandex.Translate.Internal
+
   build-depends:       base >=4.5 && <5,
                        bytestring >=0.10 && <0.11,
                        text >=1.0,
