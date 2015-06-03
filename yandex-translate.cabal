@@ -22,7 +22,8 @@ flag integration-tests
 library
   exposed-modules:     Network.Yandex.Translate,
                        Network.Yandex.Translate.Types,
-                       Network.Yandex.Dictionary
+                       Network.Yandex.Dictionary,
+                       Network.Yandex.Dictionary.Types
 
   other-modules:       Network.Yandex.Translate.Internal
 

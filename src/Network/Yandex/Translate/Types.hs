@@ -18,6 +18,7 @@ module Network.Yandex.Translate.Types (
     _session,
     -- funcs
     formatDirection,
+    directionAsText,
     configureApi,
     runYandexApiT,
     runYandexApi,
@@ -112,6 +113,10 @@ instance Default TranslateParams where
 formatDirection :: Maybe Language -> Language -> Text
 formatDirection (Just f) l =  f <> "-" <> l
 formatDirection Nothing t = t
+
+
+directionAsText :: Direction -> Text
+directionAsText (Direction (f, l)) = f <> "-" <> l
 
 
 configureApi :: APIKey -> YandexApiConfig
