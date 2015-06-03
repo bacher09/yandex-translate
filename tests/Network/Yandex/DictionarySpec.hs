@@ -5,7 +5,9 @@ import Test.Hspec
 import System.Environment
 import Network.Yandex.Translate
 import Network.Yandex.Dictionary
+import Data.Default.Class
 import Data.Text
+import Control.Lens
 
 
 spec :: Spec
@@ -19,5 +21,11 @@ spec = do
             dirs <- runApi conf getLangs
             dirs `shouldContain` [Direction ("en", "ru")]
             dirs `shouldContain` [Direction ("ru", "en")]
+
+    describe "dictLookup" $ do
+        it "should translate right" $ do
+            dres <- runApi conf $ dictLookup (Direction ("en", "ru")) def "hello"
+            let trans = dres ^.. traverse.translates.traverse.text
+            trans `shouldContain` ["привет"]
   where
     runApi = runYandexApiSession
