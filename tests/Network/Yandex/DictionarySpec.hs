@@ -25,7 +25,7 @@ spec = do
     describe "dictLookup" $ do
         it "should translate right" $ do
             dres <- runApi conf $ dictLookup (Direction ("en", "ru")) def "hello"
-            let trans = dres ^.. traverse.translates.traverse.text
-            trans `shouldContain` ["привет"]
+            let trans = dres ^.. traverse.text
+            trans `shouldContain` ["hello"]
   where
     runApi = runYandexApiSession
