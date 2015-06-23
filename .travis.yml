@@ -1,0 +1,12 @@
+language: haskell
+
+ghc:
+  - '7.10'
+  - '7.8'
+  - '7.6'
+  - '7.4'
+script:
+  - cabal configure --enable-tests -fintegration-tests && cabal build && cabal test
+env:
+  global:
+    secure: 16hPLTs4Z78C5CXMNboTrVhoAL4+gzJitdGZTtmYIqtYphrcDI4yBWbtHvPoI8mDZ+ZsZ//y8FjHkuB/p0/WcMrF++L0781fOdzz+HwAtX02MuyBhXsG/aPbL8CdMt3ANA3kq89KpVBLlvwaoKjJUi5p+ePPHIAvEkyOdHYXPGCdFUZUXPQ0Wmi+S2RGf+GTV0AdmoKfIr2Tl1EKbZ+KSaqb7VODztA3u2im2yDgWaWm90FbMiHrobTGpPCWim2WRVR8c4UU5r3seW2e+Z+G7UJ+EDFuu44CuSK6h2INm2kZ9U3rT0V1Lw8cldz/gTzC/GQtgT1CwUe/oyqHXXT7zoWIC9eMBjZVNLD9DUjL598lO2i5j1yUbacEpD6C100pb0NhLbsfQjrm7s7DvFf+N45tE7mbsjRMq1gtsn/3PX6UoW7mdcsF6rZb0pIEpy6CXXBNcWltbVQ7hm1ksbBjmkihizHljoWs07Ak+SiCdUyeRhBuWT/JwSFFPp3CGGTRDQYOLvESrna+2W5uNtMcWvuBUCsXegB0S8hxeU0woZXBTZkd+NwQu6aBnK1ezKnTW8CbXfijYD0w7cDmAI+cy/AFTwQlV6Ml+yCtFIKx7eUon1emVLECfw15ExS86ZaPgZZtJwanE28UE9WKD/B7UvopDTKuBctKuuMH7T+V+js=
