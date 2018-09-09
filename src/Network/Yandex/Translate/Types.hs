@@ -28,7 +28,7 @@ import Prelude hiding (drop)
 import Data.Default.Class
 import Control.Monad.Trans.Reader
 import Control.Lens
-import Data.Aeson
+import Data.Aeson hiding (Options)
 import Data.Monoid
 import Data.HashMap.Strict
 import Data.Text
